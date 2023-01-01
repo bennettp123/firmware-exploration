@@ -1,0 +1,39 @@
+FROM debian:bullseye
+RUN apt-get update \
+    && apt-get dist-upgrade \
+    && apt-get install -y\
+        pip \
+        liblzo2-dev
+RUN pip install \
+        python-lzo \
+        ubi_reader
+RUN apt-get update \
+    && apt-get install -y\
+        binwalk
+COPY patches /tmp/patches
+SHELL [ "/bin/bash", "-o", "pipefail", "-exc" ]
+RUN apt-get update \
+    && apt-get install -y \
+        git \
+        wget \
+    && ( cd $(mktemp -d) \
+         && git clone --depth 1 https://github.com/devttys0/sasquatch.git . \
+         && for file in /tmp/patches/*; do git apply --whitespace=nowarn "$file"; done \
+         && ./build.sh \
+         && rm -rf $(pwd) \
+       ) \
+    && rm -rf /tmp/patches
+RUN ( cd $(mktemp -d) \
+      && git clone --depth 1 https://github.com/torvalds/linux.git . \
+      && cp scripts/extract-ikconfig /usr/local/bin/extract-ikconfig \
+      && rm -rf $(pwd) \
+    ) 
+RUN apt-get update \
+    && apt-get install -y\
+        fdisk \
+        file \
+        less \
+        man \
+        vim \
+        xxd
+
